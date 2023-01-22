@@ -39,6 +39,7 @@
     "dev": "ray develop",
     "fix-lint": "ray lint --fix",
     "lint": "ray lint",
+    "update-tools": "./scraping/update_tools && npm run build",
     "publish": "ray publish"
   }
 }

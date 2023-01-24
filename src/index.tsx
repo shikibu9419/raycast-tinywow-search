@@ -1,47 +1,45 @@
 import { ActionPanel, Action, List, environment } from "@raycast/api";
-import { useCallback } from "react";
-import { updateTools } from "./update-tools";
+import { useCachedPromise } from "@raycast/utils";
 
-import tools from "../assets/tools.json";
+import { writeFile } from "fs";
 
-const updateItem = (
-  <List.Item
-    key={0}
-    title="UPDATE TOOLS"
-    subtitle="Scrape tinywow.com/tools and update tools"
-    keywords={["update"]}
-    actions={
-      <ActionPanel>
-        <Action
-          title="Scrape tinywow.com/tools and update tools"
-          onAction={() => updateTools(environment.assetsPath)}
-        />
-      </ActionPanel>
-    }
-  />
-);
+import cachedTools from "../assets/tools.json";
+import { getDOM, getTinyWowTools } from "./get-tools";
 
 export default function Command() {
-  const getToolList = useCallback(
-    () =>
-      tools
-        .map((tool, index) => (
-          <List.Item
-            key={index + 1}
-            title={tool.title}
-            subtitle={tool.subtitle}
-            keywords={tool.keywords.split(" ")}
-            icon={{ source: tool.icon }}
-            actions={
-              <ActionPanel>
-                <Action.OpenInBrowser url={tool.url} />
-              </ActionPanel>
-            }
-          />
-        ))
-        .concat(updateItem),
-    []
+  const { isLoading, data, error, revalidate } = useCachedPromise(
+    async () => {
+      const dom = await getDOM("https://tinywow.com/tools");
+      return getTinyWowTools(dom);
+    },
+    [],
+    {
+      initialData: cachedTools,
+      onData: (data) => {
+        writeFile(`${environment.assetsPath}/tools.json`, JSON.stringify(data, null, 2), (err) => {
+          if (err) console.error(err);
+        });
+      },
+    }
   );
 
-  return <List>{getToolList()}</List>;
+  return (
+    <List isLoading={isLoading}>
+      {(!error ? data : cachedTools).map((tool, index) => (
+        <List.Item
+          key={index + 1}
+          title={tool.title}
+          subtitle={tool.subtitle}
+          keywords={tool.keywords}
+          icon={{ source: tool.icon }}
+          actions={
+            <ActionPanel>
+              <Action.OpenInBrowser url={tool.url} />
+              <Action title="Reload" onAction={revalidate} />
+            </ActionPanel>
+          }
+        />
+      ))}
+    </List>
+  );
 }

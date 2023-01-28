@@ -10,9 +10,11 @@ interface Tool {
 }
 
 const parser = new DOMParser();
-export const getDOM = async (url: string) => parser.parseFromString(await fetch(url).then((res) => res.text()));
+const getDOM = async (url: string): Promise<DOMParser.Dom> =>
+  parser.parseFromString(await fetch(url).then((res) => res.text()));
 
-export const getTinyWowTools = (dom: DOMParser.Dom): Tool[] => {
+export const getTinyWowTools = async (): Promise<Tool[]> => {
+  const dom = await getDOM("https://tinywow.com/tools");
   const elementTools = dom.getElementsByClassName("element-tools") || [];
 
   return elementTools.map((elem) => {

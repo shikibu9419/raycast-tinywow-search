@@ -4,33 +4,26 @@ import { useCachedPromise } from "@raycast/utils";
 import { writeFile } from "fs";
 
 import cachedTools from "../assets/tools.json";
-import { getDOM, getTinyWowTools } from "./get-tools";
+import { getTinyWowTools } from "./get-tools";
 
 export default function Command() {
-  const { isLoading, data, error, revalidate } = useCachedPromise(
-    async () => {
-      const dom = await getDOM("https://tinywow.com/tools");
-      return getTinyWowTools(dom);
+  const { isLoading, data, error, revalidate } = useCachedPromise(getTinyWowTools, [], {
+    initialData: cachedTools,
+    onData: (data) => {
+      writeFile(`${environment.assetsPath}/tools.json`, JSON.stringify(data, null, 2), (err) => {
+        if (err) console.error(err);
+      });
     },
-    [],
-    {
-      initialData: cachedTools,
-      onData: (data) => {
-        writeFile(`${environment.assetsPath}/tools.json`, JSON.stringify(data, null, 2), (err) => {
-          if (err) console.error(err);
-        });
-      },
-    }
-  );
+  });
 
   return (
     <List isLoading={isLoading}>
       {(!error ? data : cachedTools).map((tool, index) => (
         <List.Item
-          key={index + 1}
+          key={index}
           title={tool.title}
           subtitle={tool.subtitle}
-          keywords={tool.keywords}
+          keywords={tool.keywords.concat(tool.subtitle.split(" "))}
           icon={{ source: tool.icon }}
           actions={
             <ActionPanel>

@@ -1,7 +1,7 @@
 import DOMParser from "dom-parser";
 import fetch from "node-fetch";
 
-interface Tool {
+export interface Tool {
   title: string;
   subtitle: string;
   keywords: string[];

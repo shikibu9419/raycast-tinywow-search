@@ -1,24 +1,29 @@
 import { ActionPanel, Action, List, environment } from "@raycast/api";
 import { useCachedPromise } from "@raycast/utils";
+import { existsSync, readFileSync, writeFile } from "fs";
 
-import { writeFile } from "fs";
+import { getTinyWowTools, Tool } from "./tool";
 
-import cachedTools from "../assets/tools.json";
-import { getTinyWowTools } from "./get-tools";
+const toolsPath = `${environment.supportPath}/tools.json`;
+const initialData: Tool[] = [];
+if (existsSync(toolsPath)) {
+  initialData.push(...JSON.parse(readFileSync(toolsPath, { encoding: "utf-8" })));
+}
 
 export default function Command() {
-  const { isLoading, data, error, revalidate } = useCachedPromise(getTinyWowTools, [], {
-    initialData: cachedTools,
+  const { isLoading, data, revalidate } = useCachedPromise(getTinyWowTools, [], {
+    initialData,
     onData: (data) => {
-      writeFile(`${environment.assetsPath}/tools.json`, JSON.stringify(data, null, 2), (err) => {
+      writeFile(toolsPath, JSON.stringify(data, null, 2), (err) => {
         if (err) console.error(err);
       });
+      initialData.splice(0, initialData.length, ...data);
     },
   });
 
   return (
     <List isLoading={isLoading}>
-      {(!error ? data : cachedTools).map((tool, index) => (
+      {data.map((tool, index) => (
         <List.Item
           key={index}
           title={tool.title}
